@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Proxy Beg</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="brand">
+          <img src="icons/icon.svg" alt="" class="brand__icon">
+          <div>
+            <h1>ProxyBeg</h1>
+            <p id="statusText">Proxy is off</p>
+          </div>
+        </div>
+        <button id="toggleProxy" class="switch" type="button" role="switch" aria-checked="false" aria-label="Enable proxy">
+          <span class="switch__thumb"></span>
+        </button>
+      </header>
+
+      <form id="proxyForm" class="form" novalidate>
+        <div class="protocol" role="group" aria-label="Proxy protocol">
+          <label>
+            <input type="radio" name="proxyScheme" value="http" checked>
+            <span>HTTP</span>
+          </label>
+          <label>
+            <input type="radio" name="proxyScheme" value="socks5">
+            <span>SOCKS5</span>
+          </label>
+        </div>
+        <label class="field">
+          <span>Proxy</span>
+          <input
+            id="proxyInput"
+            type="text"
+            inputmode="url"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="127.0.0.1:1080@user:pass"
+          >
+        </label>
+        <button class="primary" type="submit">Add proxy</button>
+        <p id="formMessage" class="message" aria-live="polite"></p>
+      </form>
+
+      <section class="list-wrap" aria-labelledby="proxyListTitle">
+        <div class="section-head">
+          <div class="section-title">
+            <h2 id="proxyListTitle">Servers</h2>
+            <span id="proxyCount" class="counter">0</span>
+          </div>
+          <div class="section-actions">
+            <button id="refreshDefaultProxies" class="secondary" type="button">Refresh</button>
+            <button id="checkAllProxies" class="secondary" type="button">Check all</button>
+          </div>
+        </div>
+        <div id="proxyList" class="proxy-list"></div>
+      </section>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
