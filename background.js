@@ -170,26 +170,14 @@ async function checkAllProxies(proxiesFromMessage = null) {
   isCheckingProxies = true;
 
   try {
-    const data = await chrome.storage.local.get(Object.values(STORAGE_KEYS));
-    const hasMessageProxies = Array.isArray(proxiesFromMessage);
-    const proxies = hasMessageProxies
+    const proxies = Array.isArray(proxiesFromMessage)
       ? proxiesFromMessage.map(normalizeProxy).filter(Boolean)
-      : Array.isArray(data.proxies) ? data.proxies.map(normalizeProxy).filter(Boolean) : [];
+      : [];
     const results = [];
 
     for (const proxy of proxies) {
       const result = await checkProxy(proxy);
       results.push(result);
-    }
-
-    if (!hasMessageProxies) {
-      const resultById = new Map(results.map((result) => [result.id, result]));
-      const updatedProxies = proxies.map((proxy) => ({
-        ...proxy,
-        check: resultToStoredCheck(resultById.get(proxy.id))
-      }));
-
-      await chrome.storage.local.set({ [STORAGE_KEYS.proxies]: updatedProxies });
     }
 
     return results;
@@ -266,15 +254,6 @@ async function fetchWithTimeout(url, timeoutMs) {
   } finally {
     clearTimeout(timeoutId);
   }
-}
-
-function resultToStoredCheck(result) {
-  return {
-    status: result?.status === "online" ? "online" : "offline",
-    latencyMs: Number.isFinite(result?.latencyMs) ? result.latencyMs : null,
-    checkedAt: Number.isFinite(result?.checkedAt) ? result.checkedAt : Date.now(),
-    error: typeof result?.error === "string" ? result.error.slice(0, 80) : ""
-  };
 }
 
 function wait(ms) {

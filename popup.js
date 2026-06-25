@@ -7,9 +7,13 @@ const STORAGE_KEYS = {
 };
 
 const DEFAULT_PROXY_LIST_URL = "https://webdev-master.github.io/proxylist.txt";
+const REMOTE_MESSAGE_URL = "https://webdev-master.github.io/message.json";
 const DEFAULT_PROXY_ID_PREFIX = "default:";
 const DEFAULT_PROXY_CACHE_TTL_MS = 3 * 60 * 60 * 1000;
 const DEFAULT_PROXY_INFO_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const ALLOWED_MESSAGE_TAGS = new Set(["A", "B", "BR", "CODE", "EM", "I", "LI", "OL", "P", "S", "STRONG", "U", "UL"]);
+const ALLOWED_MESSAGE_LINK_PROTOCOLS = new Set(["http:", "https:", "mailto:", "tel:"]);
+const ALLOWED_MESSAGE_COLORS = new Set(["green", "yellow", "red"]);
 const COUNTRY_LOOKUP_PROVIDERS = [
   {
     url: (host) => `https://ipapi.co/${encodeURIComponent(host)}/json/`,
@@ -44,6 +48,7 @@ const proxyList = document.querySelector("#proxyList");
 const proxyCount = document.querySelector("#proxyCount");
 const statusText = document.querySelector("#statusText");
 const toggleProxy = document.querySelector("#toggleProxy");
+const remoteMessage = document.querySelector("#remoteMessage");
 const refreshDefaultProxies = document.querySelector("#refreshDefaultProxies");
 const checkAllProxies = document.querySelector("#checkAllProxies");
 const schemeInputs = Array.from(document.querySelectorAll("input[name='proxyScheme']"));
@@ -65,6 +70,10 @@ init();
 async function init() {
   state = await loadState();
   render();
+  loadRemoteMessage().catch((error) => {
+    console.warn("Remote message could not be loaded:", error.message || error);
+    hideRemoteMessage();
+  });
   await loadDefaultProxies();
   if (reconcileActiveProxyState()) {
     await saveState();
@@ -265,6 +274,120 @@ async function applyProxyState() {
     type: "APPLY_PROXY_STATE",
     proxy: getActiveProxy()
   });
+}
+
+async function loadRemoteMessage() {
+  const response = await fetch(REMOTE_MESSAGE_URL, { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  const data = await response.json();
+  const message = typeof data?.message === "string" ? data.message.trim() : "";
+  const color = normalizeRemoteMessageColor(data?.color);
+
+  if (!message) {
+    hideRemoteMessage();
+    return;
+  }
+
+  showRemoteMessage(message, color);
+}
+
+function showRemoteMessage(message, color) {
+  const safeHtml = sanitizeMessageHtml(message);
+
+  if (!safeHtml) {
+    hideRemoteMessage();
+    return;
+  }
+
+  remoteMessage.innerHTML = safeHtml;
+  remoteMessage.classList.remove("is-green", "is-yellow", "is-red");
+  remoteMessage.classList.add(`is-${color}`);
+  remoteMessage.hidden = false;
+}
+
+function hideRemoteMessage() {
+  remoteMessage.innerHTML = "";
+  remoteMessage.classList.remove("is-green", "is-yellow", "is-red");
+  remoteMessage.hidden = true;
+}
+
+function normalizeRemoteMessageColor(value) {
+  return ALLOWED_MESSAGE_COLORS.has(value) ? value : "green";
+}
+
+function sanitizeMessageHtml(value) {
+  const template = document.createElement("template");
+  template.innerHTML = String(value);
+  sanitizeMessageNode(template.content);
+  return template.innerHTML.trim();
+}
+
+function sanitizeMessageNode(parent) {
+  for (const node of Array.from(parent.childNodes)) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      continue;
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      node.remove();
+      continue;
+    }
+
+    const tagName = node.tagName;
+
+    if (["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED"].includes(tagName)) {
+      node.remove();
+      continue;
+    }
+
+    sanitizeMessageNode(node);
+
+    if (!ALLOWED_MESSAGE_TAGS.has(tagName)) {
+      node.replaceWith(...Array.from(node.childNodes));
+      continue;
+    }
+
+    sanitizeMessageAttributes(node);
+  }
+}
+
+function sanitizeMessageAttributes(element) {
+  const href = element.tagName === "A" ? element.getAttribute("href") : "";
+
+  for (const attribute of Array.from(element.attributes)) {
+    element.removeAttribute(attribute.name);
+  }
+
+  if (element.tagName !== "A") {
+    return;
+  }
+
+  const safeHref = getSafeMessageHref(href);
+
+  if (!safeHref) {
+    return;
+  }
+
+  element.setAttribute("href", safeHref);
+  element.setAttribute("target", "_blank");
+  element.setAttribute("rel", "noopener noreferrer");
+}
+
+function getSafeMessageHref(value) {
+  if (!value) {
+    return "";
+  }
+
+  try {
+    const url = new URL(value, window.location.href);
+    return ALLOWED_MESSAGE_LINK_PROTOCOLS.has(url.protocol) ? url.href : "";
+  } catch (error) {
+    return "";
+  }
 }
 
 function parseProxy(value) {

@@ -134,6 +134,55 @@ h1 {
   box-shadow: var(--shadow);
 }
 
+.remote-message {
+  margin: -4px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.remote-message.is-green {
+  border-color: rgba(15, 118, 110, 0.18);
+  background: #f0fdfa;
+}
+
+.remote-message.is-yellow {
+  border-color: rgba(202, 138, 4, 0.28);
+  background: #fefce8;
+}
+
+.remote-message.is-red {
+  border-color: rgba(220, 38, 38, 0.24);
+  background: #fef2f2;
+}
+
+.remote-message[hidden] {
+  display: none;
+}
+
+.remote-message :where(p, ul, ol) {
+  margin: 0 0 8px;
+}
+
+.remote-message :where(p, ul, ol):last-child {
+  margin-bottom: 0;
+}
+
+.remote-message ul,
+.remote-message ol {
+  padding-left: 18px;
+}
+
+.remote-message a {
+  color: var(--accent-strong);
+  font-weight: 750;
+}
+
 .protocol {
   display: grid;
   grid-template-columns: 1fr 1fr;
